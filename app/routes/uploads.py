@@ -1,8 +1,9 @@
-from fastapi import APIRouter, UploadFile, File, Form
-from app.schemas.upload import UploadResponse
+from fastapi import APIRouter, File, Form, UploadFile
+
 from app.clients.s3_client import upload_image
 from app.clients.sqs_client import send_message
 from app.core.logger import logger
+from app.schemas.upload import UploadResponse
 
 router = APIRouter()
 

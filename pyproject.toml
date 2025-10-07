@@ -12,6 +12,7 @@ dependencies = [
     "fastapi>=0.118.0",
     "httpx>=0.28.1",
     "mangum>=0.19.0",
+    "mypy>=1.13.0",
     "pillow>=11.0.0",
     "pydantic>=2.11.10",
     "pydantic-settings>=2.11.0",
@@ -23,6 +24,7 @@ dependencies = [
     "python-ulid>=3.0.0",
     "ruff>=0.13.3",
     "structlog>=25.4.0",
+    "taskipy>=1.14.0",
     "tqdm>=4.67.1",
     "weaviate-client>=4.17.0",
 ]
@@ -98,3 +100,38 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
 ]
+
+[tool.mypy]
+python_version = "3.12"
+strict = false
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+follow_imports = "normal"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "aioboto3.*",
+    "pymemcache.*",
+    "mangum.*",
+    "ulid.*",
+]
+ignore_missing_imports = true
+
+[tool.taskipy.tasks]
+lint = "ruff check app/ tests/"
+lint-fix = "ruff check --fix app/ tests/ && ruff format app/ tests/"
+format = "ruff format app/ tests/"
+type-check = "mypy app/"
+test = "pytest tests/ -v"
+test-cov = "pytest tests/ --cov=app --cov-report=term-missing --cov-report=html"
+dev = "uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+ci = "task lint && task type-check && task test"
+clean = "find . -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true && find . -type f -name '*.pyc' -delete && rm -rf .pytest_cache .ruff_cache .mypy_cache htmlcov .coverage"

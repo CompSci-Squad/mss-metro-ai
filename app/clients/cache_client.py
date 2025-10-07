@@ -1,6 +1,8 @@
-from pymemcache.client import base
-from app.core.settings import settings
 from typing import Any
+
+from pymemcache.client import base
+
+from app.core.settings import settings
 
 _client = base.Client((settings.cache_host, settings.cache_port))
 

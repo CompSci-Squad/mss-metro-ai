@@ -1,7 +1,9 @@
-import aioboto3
 from typing import Any
+
+import aioboto3
+
 from app.core.settings import settings
-from app.utils.helpers import compress_image, calculate_md5, generate_s3_key, generate_md5_key
+from app.utils.helpers import calculate_md5, compress_image, generate_md5_key, generate_s3_key
 
 
 async def upload_image(project_id: str, image_data: bytes, filename: str) -> dict[str, Any]:

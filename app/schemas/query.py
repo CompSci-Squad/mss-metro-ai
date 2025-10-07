@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import List
 
 
 class QueryRequest(BaseModel):
@@ -9,5 +8,5 @@ class QueryRequest(BaseModel):
 
 class QueryResponse(BaseModel):
     summary: str
-    changes: List[str]
+    changes: list[str]
     confidence: float

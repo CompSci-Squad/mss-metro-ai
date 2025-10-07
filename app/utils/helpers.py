@@ -1,8 +1,9 @@
 import hashlib
 from datetime import datetime
-from ulid import ULID
 from io import BytesIO
+
 from PIL import Image
+from ulid import ULID
 
 
 def generate_s3_key(project_id: str, extension: str = "jpg") -> str:

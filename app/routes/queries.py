@@ -1,9 +1,11 @@
-from fastapi import APIRouter
-from app.schemas.query import QueryRequest, QueryResponse
-from app.clients.rag_client import ask_rag
-from app.clients.cache_client import get_cache, set_cache
-from app.core.logger import logger
 import json
+
+from fastapi import APIRouter
+
+from app.clients.cache_client import get_cache, set_cache
+from app.clients.rag_client import ask_rag
+from app.core.logger import logger
+from app.schemas.query import QueryRequest, QueryResponse
 
 router = APIRouter()
 

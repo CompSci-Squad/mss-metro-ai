@@ -1,5 +1,6 @@
-import structlog
 import logging
+
+import structlog
 
 
 def setup_logger() -> structlog.BoundLogger:
