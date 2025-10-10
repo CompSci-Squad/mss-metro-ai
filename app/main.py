@@ -1,20 +1,12 @@
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 
-from app.core.logger import logger
 from app.routes import health, queries, uploads
 
+app = FastAPI(
+    title="MSS Metro AI API",
+    version="1.0.0",
+)
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    logger.info("api_service_started")
-    yield
-    logger.info("api_service_shutdown")
-
-
-app = FastAPI(title="Image-Diff API", version="1.0", lifespan=lifespan)
-
-app.include_router(health.router)
-app.include_router(uploads.router, prefix="/projects")
-app.include_router(queries.router)
+app.include_router(health.router, tags=["health"])
+app.include_router(uploads.router, prefix="/projects", tags=["uploads"])
+app.include_router(queries.router, tags=["queries"])

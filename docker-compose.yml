@@ -18,12 +18,30 @@ services:
     networks:
       - default
 
-  memcached:
-    image: memcached:1.6-alpine
-    container_name: memcached
+  redis:
+    image: redis:7-alpine
+    container_name: redis
     ports:
-      - "11211:11211"
-    command: memcached -m 64
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - default
+
+  opensearch:
+    image: opensearchproject/opensearch:2.11.0
+    container_name: opensearch
+    environment:
+      - discovery.type=single-node
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - plugins.security.disabled=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
     networks:
       - default
 
@@ -31,9 +49,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: api-lambda
+    container_name: api-service
     ports:
-      - "9000:8080"
+      - "8000:8000"
     environment:
       - AWS_ENDPOINT=http://localstack:4566
       - AWS_ACCESS_KEY_ID=test
@@ -41,17 +59,80 @@ services:
       - AWS_DEFAULT_REGION=us-east-1
       - S3_BUCKET=mss-metro-images
       - SQS_QUEUE_URL=http://localstack:4566/000000000000/image-processing
-      - RAG_SERVICE_URL=http://host.docker.internal:8001
-      - CACHE_HOST=memcached
-      - CACHE_PORT=11211
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - OPENSEARCH_HOST=opensearch
+      - OPENSEARCH_PORT=9200
+      - OPENSEARCH_USER=admin
+      - OPENSEARCH_PASSWORD=admin
+      - OPENSEARCH_INDEX=image-embeddings
+      - OPENSEARCH_USE_SSL=false
+      - OPENSEARCH_VERIFY_CERTS=false
+      - VLM_MODEL_NAME=Salesforce/blip2-opt-2.7b
+      - VLM_MODEL_CACHE_DIR=/app/models
+      - EMBEDDING_MODEL_NAME=sentence-transformers/clip-ViT-B-32
+      - USE_QUANTIZATION=true
+      - DEVICE=cpu
+      - MAX_IMAGE_SIZE=1024
+      - CACHE_TTL=3600
+    volumes:
+      - model-cache:/app/models
     depends_on:
       - localstack
-      - memcached
+      - redis
+      - opensearch
     networks:
       - default
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: celery-worker
+    environment:
+      - AWS_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+      - S3_BUCKET=mss-metro-images
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - OPENSEARCH_HOST=opensearch
+      - OPENSEARCH_PORT=9200
+      - OPENSEARCH_USER=admin
+      - OPENSEARCH_PASSWORD=admin
+      - OPENSEARCH_INDEX=image-embeddings
+      - OPENSEARCH_USE_SSL=false
+      - OPENSEARCH_VERIFY_CERTS=false
+      - VLM_MODEL_NAME=Salesforce/blip2-opt-2.7b
+      - VLM_MODEL_CACHE_DIR=/app/models
+      - EMBEDDING_MODEL_NAME=sentence-transformers/clip-ViT-B-32
+      - USE_QUANTIZATION=true
+      - DEVICE=cpu
+      - MAX_IMAGE_SIZE=1024
+      - CACHE_TTL=3600
+    volumes:
+      - model-cache:/app/models
+    depends_on:
+      - localstack
+      - redis
+      - opensearch
+    networks:
+      - default
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=2
 
 volumes:
   localstack-data:
+  redis-data:
+  opensearch-data:
+  model-cache:
 
 networks:
   default:
